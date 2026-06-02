@@ -1,63 +1,58 @@
 # Hindsight
 
-**Hindsight** is a GitHub-style git activity visualizer for your terminal. It scans your local directories for git repositories and aggregates your contribution history into a beautiful, blue, pixel-perfect heatmap.
+Hindsight is a small npm library for scanning git repositories, building weekday/hour heatmap data, and rendering weekly TUI panels.
 
-<img width="1140" height="705" alt="image" src="https://github.com/user-attachments/assets/629770d3-e876-48dd-8982-033b99112480" />
-
-
-## Installation
+## Install
 
 ```bash
-cargo install hindsight
+npm install hindsight
 ```
 
-> You can get `cargo` [here](https://doc.rust-lang.org/cargo/getting-started/installation.html).
+## API
 
-## Usage
+- `scanRepos(root, maxDepth?)` — find git repositories under a directory
+- `analyzeRepo(repoPath, options?)` — analyze one repo into weekday/hour records
+- `analyzeRepos(rootPath, options?)` — analyze all repos under a root
+- `buildHeatmap(records)` — build a 7×24 heatmap matrix
+- `renderHeatmapPanel(heatmap, options?)` — render a weekly terminal panel as text
 
+## Demo
+
+```ts
+import { buildHeatmap } from 'hindsight';
+import { renderHeatmapPanel } from './src/tui.js';
+
+const records = [
+  { weekday: 1, hour: 9, commits: 3, linesChanged: 42 },
+  { weekday: 1, hour: 9, commits: 1, linesChanged: 8 },
+  { weekday: 2, hour: 14, commits: 2, linesChanged: 19 },
+  { weekday: 4, hour: 17, commits: 4, linesChanged: 73 },
+  { weekday: 6, hour: 2, commits: 1, linesChanged: 5 },
+];
+
+const heatmap = buildHeatmap(records);
+
+console.log(renderHeatmapPanel(heatmap, { metric: 'commits', title: 'Example Commits' }));
+console.log('');
+console.log(renderHeatmapPanel(heatmap, { metric: 'linesChanged', title: 'Example Lines Changed' }));
 ```
-hindsight [OPTIONS] [PATH]
-```
 
-### Interactive TUI (Default)
-
-Run without arguments to scan the current directory and open the TUI:
+Or run the bundled demo:
 
 ```bash
-hindsight
+npx tsx demo.ts
 ```
 
-### Arguments
+Or launch the interactive TUI:
 
-- `[PATH]`:  directory to scan (default: current dir)
-
-### Options
-
-| Flag | Description |
-|------|-------------|
-| `--days <N>` | Number of days to look back (default: 365) |
-| `--depth <N>` | Max recursion depth for finding repos (default: 3) |
-| `--authors "<NAMES>"` | Filter by comma-separated author list |
-| `--list` | Print detailed stats table to stdout |
-| `--export-tsv <FILE>` | Export stats to TSV file |
-
-### Examples
-
-**Analyze a specific workspace for the last 30 days:**
 ```bash
-hindsight --days 30 ~/Dev
+npm run tui -- --path .
 ```
 
-**Filter for your own commits:**
+## Development
+
 ```bash
-hindsight --authors "Alice,Alice Smith"
+npm run build
+npm test
+npm run tui -- --path .
 ```
-
-**Export your yearly stats to a file:**
-```bash
-hindsight --export-tsv 2024_stats.tsv
-```
-
-## License
-
-MIT

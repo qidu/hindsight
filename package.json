@@ -1,0 +1,27 @@
+{
+  "name": "hindsight",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Git activity analysis library that builds weekday/hour heatmap data.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test --import tsx",
+    "tui": "tsx src/tui.ts",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.7"
+  }
+}
