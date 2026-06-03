@@ -4,6 +4,7 @@ export { buildHeatmap } from './heatmap.js';
 export type {
   AnalyzeOptions,
   CommitRecord,
+  HeatmapRecord,
   HeatmapCell,
   HeatmapData,
   Hour,

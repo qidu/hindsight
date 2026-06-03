@@ -7,18 +7,14 @@ const heatmap: HeatmapData = {
   rows: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
   columns: Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0')),
   cells: Array.from({ length: 7 }, () =>
-    Array.from({ length: 24 }, () => ({ commits: 0, linesChanged: 0 })),
+    Array.from({ length: 24 }, () => ({ values: 0 })),
   ),
-  totalCommits: 3,
-  totalLinesChanged: 12,
-  maxCommits: 2,
-  maxLinesChanged: 8,
+  totalValues: 12,
+  maxValues: 8,
 };
 
-heatmap.cells[1][9].commits = 2;
-heatmap.cells[1][9].linesChanged = 8;
-heatmap.cells[4][17].commits = 1;
-heatmap.cells[4][17].linesChanged = 4;
+heatmap.cells[1][9].values = 8;
+heatmap.cells[4][17].values = 4;
 
 test('getAnsiColor maps values to the expected ramp', () => {
   assert.equal(getAnsiColor(0, 8), '\x1b[38;2;22;27;34m');
@@ -29,10 +25,10 @@ test('getAnsiColor maps values to the expected ramp', () => {
 });
 
 test('renderHeatmapPanel renders a weekly grid', () => {
-  const output = renderHeatmapPanel(heatmap, { metric: 'commits' });
+  const output = renderHeatmapPanel(heatmap);
 
-  assert.match(output, /Commits \(3 total\)/);
-  assert.match(output, /00 01 02 03/);
+  assert.match(output, /Values \(12 total\)/);
+  assert.match(output, /00  02  04  06/);
   assert.match(output, /Mon .*\x1b\[38;2;21;101;192m■\x1b\[0m/);
   assert.match(output, /Thu .*\x1b\[38;2;30;136;229m■\x1b\[0m/);
 });

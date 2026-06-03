@@ -4,10 +4,7 @@ import { analyzeRepos } from './analyzer.js';
 import { buildHeatmap } from './heatmap.js';
 import type { AnalyzeOptions, HeatmapData } from './types.js';
 
-export type HeatmapMetric = 'commits' | 'linesChanged';
-
 export interface TuiOptions {
-  metric?: HeatmapMetric;
   title?: string;
 }
 
@@ -27,16 +24,16 @@ const SHOW_CURSOR = '\x1b[?25h';
 const CLEAR_SCREEN = '\x1b[2J\x1b[H';
 const CELL = '■';
 
-function getMetricValue(heatmap: HeatmapData, metric: HeatmapMetric): number {
-  return metric === 'commits' ? heatmap.totalCommits : heatmap.totalLinesChanged;
+function getMetricValue(heatmap: HeatmapData): number {
+  return heatmap.totalValues;
 }
 
-function getMetricMax(heatmap: HeatmapData, metric: HeatmapMetric): number {
-  return metric === 'commits' ? heatmap.maxCommits : heatmap.maxLinesChanged;
+function getMetricMax(heatmap: HeatmapData): number {
+  return heatmap.maxValues;
 }
 
-function getCellValue(heatmap: HeatmapData, row: number, column: number, metric: HeatmapMetric): number {
-  return heatmap.cells[row][column][metric];
+function getCellValue(heatmap: HeatmapData, row: number, column: number): number {
+  return heatmap.cells[row][column].values;
 }
 
 export function getAnsiColor(value: number, maxValue: number): string {
@@ -62,25 +59,20 @@ export function getAnsiColor(value: number, maxValue: number): string {
 }
 
 export function renderHeatmapPanel(heatmap: HeatmapData, options: TuiOptions = {}): string {
-  const metric = options.metric ?? 'commits';
-  const title = options.title ?? (metric === 'commits' ? 'Commits' : 'Lines Changed');
-  const total = getMetricValue(heatmap, metric);
-  const maxValue = getMetricMax(heatmap, metric);
+  const title = options.title ?? 'Values';
+  const total = getMetricValue(heatmap);
+  const maxValue = getMetricMax(heatmap);
 
   const lines: string[] = [];
   lines.push(`  ${title} (${total} total)`);
-  lines.push(
-    `      ${heatmap.columns
-      .map((hour, index) => (index % 2 === 0 ? hour : '  '))
-      .join('')}`,
-  );
+  lines.push(`     ${heatmap.columns.filter((_, index) => index % 2 === 0).join('  ')}`);
 
   for (let rowIndex = 0; rowIndex < ROW_LABELS.length; rowIndex += 1) {
     const label = ROW_LABELS[rowIndex].padEnd(3, ' ');
     const cells: string[] = [];
 
     for (let columnIndex = 0; columnIndex < heatmap.columns.length; columnIndex += 1) {
-      const value = getCellValue(heatmap, rowIndex, columnIndex, metric);
+      const value = getCellValue(heatmap, rowIndex, columnIndex);
       cells.push(`${getAnsiColor(value, maxValue)}${CELL}${RESET}`);
     }
 
@@ -92,10 +84,9 @@ export function renderHeatmapPanel(heatmap: HeatmapData, options: TuiOptions = {
   return lines.join('\n');
 }
 
-function parseArgs(argv: string[]): { path: string; analyzeOptions: AnalyzeOptions; metric: HeatmapMetric } {
+function parseArgs(argv: string[]): { path: string; analyzeOptions: AnalyzeOptions } {
   const analyzeOptions: AnalyzeOptions = {};
   let path = '.';
-  let metric: HeatmapMetric = 'commits';
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -126,16 +117,9 @@ function parseArgs(argv: string[]): { path: string; analyzeOptions: AnalyzeOptio
       i += 1;
       continue;
     }
-
-    if (arg === '--metric' && argv[i + 1]) {
-      const value = argv[i + 1];
-      metric = value === 'linesChanged' ? 'linesChanged' : 'commits';
-      i += 1;
-      continue;
-    }
   }
 
-  return { path, analyzeOptions, metric };
+  return { path, analyzeOptions };
 }
 
 function writeFrame(frame: string): void {
@@ -193,14 +177,20 @@ async function runInteractivePanel(frame: string): Promise<void> {
 
 export async function runTui(path: string, analyzeOptions: AnalyzeOptions = {}, options: TuiOptions = {}): Promise<void> {
   const records = await analyzeRepos(path, analyzeOptions);
-  const heatmap = buildHeatmap(records);
+  const heatmap = buildHeatmap(
+    records.map((record) => ({
+      weekday: record.weekday,
+      hour: record.hour,
+      values: record.commits + record.linesChanged,
+    })),
+  );
   const frame = renderHeatmapPanel(heatmap, options);
   await runInteractivePanel(frame);
 }
 
 export async function main(argv = process.argv.slice(2)): Promise<void> {
-  const { path, analyzeOptions, metric } = parseArgs(argv);
-  await runTui(path, analyzeOptions, { metric });
+  const { path, analyzeOptions } = parseArgs(argv);
+  await runTui(path, analyzeOptions);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
